@@ -48,6 +48,7 @@ class AmazonReviewsSpider(scrapy.Spider):
         # Parse Product Reviews
         review_elements = response.css("#cm_cr-review_list div.review")
         for review_element in review_elements:
+
             yield {
                 "asin": asin,
                 "text": "".join(review_element.css("span[data-hook=review-body] ::text").getall()).strip(),
@@ -55,4 +56,8 @@ class AmazonReviewsSpider(scrapy.Spider):
                 "location_and_date": review_element.css("span[data-hook=review-date] ::text").get(),
                 "verified": bool(review_element.css("span[data-hook=avp-badge] ::text").get()),
                 "rating": review_element.css("*[data-hook*=review-star-rating] ::text").re(r"(\d+\.*\d*) out")[0],
+                "user": review_element.css("div.a-profile-content span.a-profile-name::text").get(),
+                "user_link": review_element.css("div[data-hook=genome-widget] a.a-profile::attr(href)").get(),
+                "product_link": review_element.css('a[data-hook="product-link"]::attr(href)').get(),
+                "product_name": review_element.css('h1.a-size-large a-text-ellipsis::text').get()
             }
