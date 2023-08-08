@@ -1,5 +1,6 @@
 import scrapy
 from urllib.parse import urljoin
+from amazon import products
 
 
 class AmazonReviewsSpider(scrapy.Spider):
@@ -10,20 +11,7 @@ class AmazonReviewsSpider(scrapy.Spider):
     }
 
     def start_requests(self):
-        asin_list = {
-            "ipad": "B09G9FPHY6",
-            "samsung": "B09MVYVBR6",
-            "sony": "B08HVYCP4G",
-            "versace": "B07K1FVM4S",
-            "nike": "B08Q9SCLXM",
-            "adidas": "B08KYBF5DJ",
-            "lenovo": "B0C3JB53RQ",
-            "alienware": "B09PH9SWB2",
-            "hisense": "B0BKH6CH8Z",
-            "pavillion": "B09NL8JTB6",
-            "umidigi": "B0BWDCXS1X"
-
-        }
+        asin_list = products.product_list
         for asin in asin_list.keys():
             amazon_reviews_url = f'https://www.amazon.com/product-reviews/{asin_list[asin]}/'
             yield scrapy.Request(url=amazon_reviews_url, callback=self.parse_reviews, meta={'asin': asin, 'retry_count': 0})
@@ -51,6 +39,10 @@ class AmazonReviewsSpider(scrapy.Spider):
 
             yield {
                 "asin": asin,
+                "url": response.url,
+                "product_img": response.css("img[data-hook=cr-product-image] ::attr(src)").get(),
+                "product_name": response.css("a[data-hook=product-link] ::text").get(),
+                "product_link": response.css("a[data-hook=product-link] ::attr(href)").get(),
                 "text": "".join(review_element.css("span[data-hook=review-body] ::text").getall()).strip(),
                 "title": review_element.css("*[data-hook=review-title]>span::text").get(),
                 "location_and_date": review_element.css("span[data-hook=review-date] ::text").get(),
@@ -58,6 +50,4 @@ class AmazonReviewsSpider(scrapy.Spider):
                 "rating": review_element.css("*[data-hook*=review-star-rating] ::text").re(r"(\d+\.*\d*) out")[0],
                 "user": review_element.css("div.a-profile-content span.a-profile-name::text").get(),
                 "user_link": review_element.css("div[data-hook=genome-widget] a.a-profile::attr(href)").get(),
-                "product_link": review_element.css('a[data-hook="product-link"]::attr(href)').get(),
-                "product_name": review_element.css('h1.a-size-large a-text-ellipsis::text').get()
             }
